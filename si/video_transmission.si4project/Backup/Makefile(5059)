@@ -1,0 +1,2 @@
+obj-y += convert_manager.o
+obj-y += yuvto264.o
