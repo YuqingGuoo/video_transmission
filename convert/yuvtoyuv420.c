@@ -55,7 +55,7 @@ static int yuv_to_yuv420_convert(PT_VideoBuf ptVideoBufIn, PT_VideoBuf ptVideoBu
     {
         ptPixelDatasOut->aucPixelDatas = malloc(ptPixelDatasOut->iTotalBytes);
     }
-    printf("ptPixelDatasIn = %p,ptPixelDatasOut = %p\n",ptPixelDatasIn->aucPixelDatas,ptPixelDatasOut->aucPixelDatas);
+    //printf("ptPixelDatasIn = %p,ptPixelDatasOut = %p\n",ptPixelDatasIn->aucPixelDatas,ptPixelDatasOut->aucPixelDatas);
     yuv_to_yuv420(ptPixelDatasIn->aucPixelDatas,ptPixelDatasOut->aucPixelDatas,ptPixelDatasOut->iWidth, ptPixelDatasOut->iHeight);
     return 0;
 }

@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <convert_manager.h>
 #include <libavutil/opt.h>
 #include <libavcodec/avcodec.h>
@@ -27,10 +29,9 @@ AVFrame *pFrame;
 AVPacket pkt;
 AVCodec *pCodec;
 AVCodecContext *pCodecCtx = NULL;
-
+int fd;
 int convert_init(void)
 {
-    int ret;
     enum AVCodecID codec_id = AV_CODEC_ID_H264;
     /* 只注册编解码器有关的组件 */
     avcodec_register_all();
@@ -58,7 +59,7 @@ int convert_init(void)
     pCodecCtx->pix_fmt = AV_PIX_FMT_YUV420P;
 
     if (codec_id == AV_CODEC_ID_H264)
-        av_opt_set(pCodecCtx->priv_data, "preset", "faster", 0);
+        av_opt_set(pCodecCtx->priv_data, "preset", "slow", 0);
 
     if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0)
     {
@@ -76,11 +77,15 @@ int convert_init(void)
     pFrame->width = pCodecCtx->width;
     pFrame->height = pCodecCtx->height;
 
-    ret = av_image_alloc(pFrame->data, pFrame->linesize, pCodecCtx->width, pCodecCtx->height,
-                         pCodecCtx->pix_fmt, 16);
-    if (ret < 0)
+
+    if (av_image_alloc(pFrame->data, pFrame->linesize, pCodecCtx->width, pCodecCtx->height,pCodecCtx->pix_fmt, 16) < 0)
     {
         printf("Could not allocate raw picture buffer\n");
+        return -1;
+    }
+    if ((fd = open("test.h264",O_WRONLY|O_CREAT))<0)
+    {
+        printf("open error:\n");
         return -1;
     }
 	return 0;
@@ -90,36 +95,6 @@ int convert_init(void)
 static int is_support_yuv_to_h264(void)
 {
     return 1;
-}
-
-static int yuv_to_yuv420(unsigned char *pSrc, unsigned char *pDest,int iWidth, int iHeight)
-{
-
-    int i, j;
-    unsigned char *u = pDest + (iWidth * iHeight);
-    unsigned char *v = u + (iWidth * iHeight) / 4;
-
-    for (i = 0; i < iHeight/2; i++)
-    {
-
-        unsigned char *src_l1 = pSrc + iWidth*2*2*i;
-        unsigned char *src_l2 = src_l1 + iWidth*2;
-        unsigned char *y_l1 = pDest + iWidth*2*i;
-        unsigned char *y_l2 = y_l1 + iWidth;
-        for (j = 0; j < iWidth/2; j++)
-        {
-            // two pels in one go
-            *y_l1++ = src_l1[0];
-            *u++ = src_l1[1];
-            *y_l1++ = src_l1[2];
-            *v++ = src_l1[3];
-            *y_l2++ = src_l2[0];
-            *y_l2++ = src_l2[2];
-            src_l1 += 4;
-            src_l2 += 4;
-        }
-    }
-    return 0;
 }
 
 
@@ -143,31 +118,16 @@ static int yuv_to_h264_convert_exit(PT_VideoBuf ptVideoBufOut)
 
 static int yuv_to_h264_convert(PT_VideoBuf ptVideoBufIn, PT_VideoBuf ptVideoBufOut)
 {
-    int iTotalBytes,got_output,ret;
-    //unsigned char *ptTmp = NULL;
-    unsigned char *p422 = NULL;
+    
     unsigned char *y = pFrame->data[0];
 	unsigned char *u = pFrame->data[1];
 	unsigned char *v = pFrame->data[2];
-	int i,j = 0;
     //Read raw YUV data
     PT_PixelDatas ptPixelDatasIn  = &ptVideoBufIn->tPixelDatas;
     PT_PixelDatas ptPixelDatasOut = &ptVideoBufOut->tPixelDatas; 
-    #if  0
-    iTotalBytes = ptPixelDatasIn->iWidth * ptPixelDatasIn->iHeight*1.5;
-    
-    if (!ptTmp)
-    {
-        ptTmp = malloc(iTotalBytes);
-    }
-    
-    yuv_to_yuv420(ptPixelDatasIn->aucPixelDatas,ptTmp,ptPixelDatasIn->iWidth, ptPixelDatasIn->iHeight);
-    
-    memcpy(y,ptTmp,307200);
-    memcpy(u,ptTmp+307200,76800);
-    memcpy(v,ptTmp+384000,76800);
-    #endif /* #if 0 */
-    #if  1
+    int got_output;
+    int i,j = 0;
+    unsigned char *p422 = NULL;
     int widthStep422 = ptPixelDatasIn->iWidth * 2;
     for(i = 0; i < ptPixelDatasIn->iHeight; i += 2)
 	{
@@ -189,14 +149,13 @@ static int yuv_to_h264_convert(PT_VideoBuf ptVideoBufIn, PT_VideoBuf ptVideoBufO
 			*(y++) = p422[j+2];
 		}
 	}
-    #endif /* #if 1 */
+	
     av_init_packet(&pkt);
     pkt.data = NULL;    // packet data will be allocated by the encoder
     pkt.size = 0;
     pFrame->pts ++;
     /* encode the image */
-    ret = avcodec_encode_video2(pCodecCtx, &pkt, pFrame, &got_output);
-    if (ret < 0) 
+    if (avcodec_encode_video2(pCodecCtx, &pkt, pFrame, &got_output) < 0) 
     {
         printf("Error encoding frame\n");
         return -1;
@@ -206,8 +165,11 @@ static int yuv_to_h264_convert(PT_VideoBuf ptVideoBufIn, PT_VideoBuf ptVideoBufO
         printf("Succeed to encode frame:tsize:%5d\n",pkt.size);
         ptPixelDatasOut->aucPixelDatas = pkt.data;
         ptPixelDatasOut->iTotalBytes = pkt.size;
+        if(write(fd,pkt.data,pkt.size)!=pkt.size)
+        {
+            printf("write h264 error");
+        }
         av_free_packet(&pkt);
-        free(ptTmp);
 	}
 	return ptPixelDatasOut->iTotalBytes;
 }
