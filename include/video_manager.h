@@ -6,7 +6,6 @@
 #define NB_BUFFER 4
 #define WIDTH 640
 #define HEIGHT 480
-#define I420 640*480*1.5
 
 
 struct VideoOpr;

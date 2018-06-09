@@ -99,7 +99,7 @@ void *video_Capture_Thread(void *arg)
 		if(tVideoDevice.ptOPr->GetFrame(&tVideoDevice, &tVideoBuf)==0)//采集一帧数据
 		{
 		    pthread_cond_signal(&captureOK);
-		    printf("GetFrame is ok\n");
+		    //printf("GetFrame is ok\n");
 		}
 		
 		iError = tVideoDevice.ptOPr->PutFrame(&tVideoDevice, &tVideoBuf);
@@ -140,7 +140,7 @@ void *video_Encode_Thread(void *arg)
         	{
         	    
         	}
-        	printf("Encode_Thread end\n");
+        	//printf("Encode_Thread end\n");
     	}
     	pthread_mutex_unlock(&lock);/*释放互斥锁*/
 	}

@@ -20,12 +20,11 @@ export AS LD CC CPP AR NM STRIP OBJCOPY OBJDUMP
 CFLAGS := -Wall -O2 -g 
 
 # 添加头文件路径，不添加的话include目录下的头文件编译时找不到
-CFLAGS += -I $(shell pwd)/include -I /mnt/f/winshare/nanopi_duo/app_h5/ffmpeg/include
+CFLAGS += -I $(shell pwd)/include -I /mnt/f/winshare/nanopi_duo/app_h5/x264/include
 #CFLAGS += -I/root/opt/libdecode/tslib/include
 
 #LDFLAGS := -lm -lfreetype -lpthread -lrt -L/root/opt/libdecode/lib
 #LDFLAGS += -lts -L/root/opt/libdecode/tslib/lib
-LDFLAGS  := -lavutil -lavcodec -lswresample -L/mnt/f/winshare/nanopi_duo/app_h5/ffmpeg/lib
 LDFLAGS  += -lx264 -L/mnt/f/winshare/nanopi_duo/app_h5/x264/lib
 LDFLAGS  += -lm -lpthread -lrt
 
