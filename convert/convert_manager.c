@@ -4,6 +4,7 @@
 
 static PT_VideoConvert g_ptVideoConvertHead = NULL;
 
+
 int register_video_convert(PT_VideoConvert ptVideoConvert)
 {
 	PT_VideoConvert ptTmp;
@@ -26,6 +27,7 @@ int register_video_convert(PT_VideoConvert ptVideoConvert)
     printf("register_video_convert success\n");
 	return 0;
 }
+
 
 void show_video_convert(void)
 {
