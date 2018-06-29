@@ -5,8 +5,6 @@
 #include <video_manager.h>
 #include <linux/videodev2.h>
 
-
-
 typedef struct VideoConvert {
     char *name;
     int (*isSupport)(void);
@@ -20,6 +18,7 @@ int register_video_convert(PT_VideoConvert ptVideoConvert);
 PT_VideoConvert get_video_convert(char *pcName);
 void show_video_convert(void);
 int yuv_to_h264_init(void);
+int omx_yuv_to_h264_init(void);
 PT_VideoConvert get_video_convert_for_formats(void);
 int yuv_to_yuv420_init(void);
 

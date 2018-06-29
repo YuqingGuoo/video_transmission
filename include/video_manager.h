@@ -6,6 +6,11 @@
 #define NB_BUFFER 4
 #define WIDTH 640
 #define HEIGHT 480
+//#define WIDTH 1280
+//#define HEIGHT 960
+//#define WIDTH 1920
+//#define HEIGHT 1080
+
 
 
 struct VideoOpr;
@@ -17,6 +22,7 @@ typedef struct VideoDevice
     int iPixelFormat; //像素格式
     int iWidth;
     int iHeight;
+    int iFps;         //帧率
     int iVideoBufCnt; //视频数据长度
     int iVideoBufMaxLen;
     int iVideoBufCurIndex;

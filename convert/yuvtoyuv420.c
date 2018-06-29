@@ -39,7 +39,7 @@ static int yuv_to_yuv420(unsigned char *pSrc, unsigned char *pDest,int iWidth, i
 
 static int is_support_yuv_to_yuv420(void)
 {
-    return 0;
+    return 1;
 }
 
 

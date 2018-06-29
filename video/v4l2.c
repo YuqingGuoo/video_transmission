@@ -11,7 +11,8 @@
 #include <errno.h>
 
 
-static int g_aiSupportedFormats[] = {V4L2_PIX_FMT_YUV420, V4L2_PIX_FMT_YUYV, V4L2_PIX_FMT_MJPEG, V4L2_PIX_FMT_RGB565};
+static int g_aiSupportedFormats[] = {V4L2_PIX_FMT_YUV420, V4L2_PIX_FMT_YUYV, V4L2_PIX_FMT_MJPEG};
+//static int g_aiSupportedFormats[] = {V4L2_PIX_FMT_MJPEG, V4L2_PIX_FMT_RGB565};
 
 static int V4l2GetFrameForReadWrite(PT_VideoDevice ptVideoDevice, PT_VideoBuf ptVideoBuf);
 static int V4l2PutFrameForReadWrite(PT_VideoDevice ptVideoDevice, PT_VideoBuf ptVideoBuf);
@@ -28,8 +29,6 @@ static int isSupportThisFormat(int iPixelFormat)
              printf("support format is:%d\n",i);
              return 1;
         }
-            
-           
     }
     return 0;
 }
@@ -65,9 +64,11 @@ static int V4l2InitDevice(char *strDevName, PT_VideoDevice ptVideoDevice)
     struct v4l2_format  tV4l2Fmt;
     struct v4l2_requestbuffers tV4l2ReqBuffs;
     struct v4l2_buffer tV4l2Buf;
+    struct v4l2_streamparm parm;
 
-    int iwidth = WIDTH;
-    int iheigt = HEIGHT;
+    int iwidth = ptVideoDevice->iWidth;
+    int iheigt = ptVideoDevice->iHeight;
+    
     iFd = open(strDevName, O_RDWR);
     if (iFd < 0)
     {
@@ -98,23 +99,35 @@ static int V4l2InitDevice(char *strDevName, PT_VideoDevice ptVideoDevice)
 	    printf("%s supports read i/o\n", strDevName);
 	}
 	memset(&tFmtDesc, 0, sizeof(tFmtDesc));
-	
 	tFmtDesc.index = 0;
 	tFmtDesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	while ((iError = ioctl(iFd, VIDIOC_ENUM_FMT, &tFmtDesc)) == 0) 
 	{
-        if (isSupportThisFormat(tFmtDesc.pixelformat))
+        if (ptVideoDevice->iPixelFormat == tFmtDesc.pixelformat)
         {
-            ptVideoDevice->iPixelFormat = tFmtDesc.pixelformat;
+            printf("can support the format of this device\n");
             break;
         }
-		tFmtDesc.index++;
+        tFmtDesc.index++;
 	}
     if (!ptVideoDevice->iPixelFormat)
     {
     	printf("can not support the format of this device\n");
         goto err_exit;        
     }
+
+    /* 设置帧数 */
+    parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    parm.parm.capture.timeperframe.numerator = 1;
+    parm.parm.capture.timeperframe.denominator = ptVideoDevice->iFps;
+    parm.parm.capture.capturemode = 0;
+    iError = ioctl(iFd, VIDIOC_S_PARM, &parm);
+    if (iError) 
+    {
+    	printf("FPS set error\n");
+        goto err_exit;        
+    }
+    
     /* set format in */
     memset(&tV4l2Fmt, 0, sizeof(struct v4l2_format));
     tV4l2Fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -232,23 +245,21 @@ static int V4l2ExitDevice(PT_VideoDevice ptVideoDevice)
 }
     
 static int V4l2GetFrameForStreaming(PT_VideoDevice ptVideoDevice, PT_VideoBuf ptVideoBuf)
-{
-    struct pollfd tFds[1];
+{   
     int iRet;
     struct v4l2_buffer tV4l2Buf;
-            
+    struct pollfd tFds[1];
     /* poll */
     tFds[0].fd     = ptVideoDevice->iFd;
     tFds[0].events = POLLIN;
-
     iRet = poll(tFds, 1, -1);
     if (iRet <= 0)
     {
         printf("poll error!\n");
         return -1;
     }
-    
     /* VIDIOC_DQBUF */
+
     memset(&tV4l2Buf, 0, sizeof(struct v4l2_buffer));
     tV4l2Buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     tV4l2Buf.memory = V4L2_MEMORY_MMAP;

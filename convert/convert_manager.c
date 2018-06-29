@@ -78,8 +78,9 @@ PT_VideoConvert get_video_convert_for_formats(void)
 int video_convert_init(void)
 {
 	int iError;
-    iError = yuv_to_h264_init();
-    iError |= yuv_to_yuv420_init();
+    //iError = yuv_to_h264_init();
+    //iError = yuv_to_yuv420_init();
+    iError |= omx_yuv_to_h264_init();
 	return iError;
 }
 

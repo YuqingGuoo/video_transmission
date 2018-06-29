@@ -109,14 +109,15 @@ static int yuv_to_h264_convert(PT_VideoBuf ptVideoBufIn, PT_VideoBuf ptVideoBufO
 {
     PT_PixelDatas ptPixelDatasIn  = &ptVideoBufIn->tPixelDatas;
     PT_PixelDatas ptPixelDatasOut = &ptVideoBufOut->tPixelDatas;
-//    if (!ptPixelDatasOut->aucPixelDatas)
-//    {
-//        ptPixelDatasOut->aucPixelDatas = malloc(ptPixelDatasOut->iTotalBytes);
-//    }
-    
+
+    if (!ptPixelDatasOut->aucPixelDatas)
+    {
+        ptPixelDatasOut->aucPixelDatas = malloc(800*1024);
+    }
     int iNal= 0;  	
 	int i,j = 0;
     int i_frame_size;
+    unsigned char *pout;
 	unsigned char *p422;
 	unsigned char *y = pPic_in->img.plane[0];
 	unsigned char *u = pPic_in->img.plane[1];
@@ -145,7 +146,7 @@ static int yuv_to_h264_convert(PT_VideoBuf ptVideoBufIn, PT_VideoBuf ptVideoBufO
 			*(y++) = p422[j+2];
 		}
 	}
-	
+	pout = ptPixelDatasOut->aucPixelDatas;
 	pPic_in->i_type = X264_TYPE_AUTO;
 	pPic_in->i_pts++;
 	i_frame_size = x264_encoder_encode(pHandle, &pNals, &iNal, pPic_in, pPic_out);
@@ -154,13 +155,11 @@ static int yuv_to_h264_convert(PT_VideoBuf ptVideoBufIn, PT_VideoBuf ptVideoBufO
 	    printf("encode error\n");
 		return -1;
 	}
-
     for (i = 0; i < iNal; i++) 
     {  
-        //printf("i = %d\n",i);
-        //printf("p_payload = %p\n",pNals[i].p_payload);
-        write( fd,pNals[i].p_payload,pNals[i].i_payload);  
-    }  
+        memcpy(pout, pNals[i].p_payload, pNals[i].i_payload);     
+        pout += pNals[i].i_payload;
+    }
 	return i_frame_size;
 }
 

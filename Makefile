@@ -1,6 +1,6 @@
 ﻿
-#CROSS_COMPILE = arm-linux-
-CROSS_COMPILE = aarch64-linux-gnu-
+CROSS_COMPILE = arm-linux-
+#CROSS_COMPILE = aarch64-linux-gnu-
 #CROSS_COMPILE = /usr/local/arm/arm-2009q3/bin/arm-none-linux-gnueabi-
 
 AS			= $(CROSS_COMPILE)as
@@ -18,15 +18,21 @@ export AS LD CC CPP AR NM STRIP OBJCOPY OBJDUMP
 
 # 编译器在编译时的参数设置
 CFLAGS := -Wall -O2 -g 
+CFLAGS += -DSTANDALONE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX -D_LINUX -fPIC -DPIC -D_REENTRANT -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -U_FORTIFY_SOURCE -Wall -g -DHAVE_LIBOPENMAX=2 -DOMX -DOMX_SKIP64BIT -ftree-vectorize -pipe -DUSE_EXTERNAL_OMX -DHAVE_LIBBCM_HOST -DUSE_EXTERNAL_LIBBCM_HOST -DUSE_VCHIQ_ARM -Wno-psabi
 
 # 添加头文件路径，不添加的话include目录下的头文件编译时找不到
-CFLAGS += -I $(shell pwd)/include -I /mnt/f/winshare/nanopi_duo/app_h5/x264/include
-#CFLAGS += -I/root/opt/libdecode/tslib/include
+CFLAGS += -I $(shell pwd)/include/ -I /mnt/f/winshare/raspberry/app/x264/include/
+CFLAGS += -I /mnt/f/winshare/raspberry/app/vc/include/
+CFLAGS += -I /mnt/f/winshare/raspberry/app/vc/include/interface/vcos/pthreads/
+CFLAGS += -I /mnt/f/winshare/raspberry/app/vc/include/interface/vmcs_host/linux/
 
 #LDFLAGS := -lm -lfreetype -lpthread -lrt -L/root/opt/libdecode/lib
 #LDFLAGS += -lts -L/root/opt/libdecode/tslib/lib
-LDFLAGS  += -lx264 -L/mnt/f/winshare/nanopi_duo/app_h5/x264/lib
+#LDFLAGS  += -lx264 -L/mnt/f/winshare/raspberry/app/x264/lib
 LDFLAGS  += -lm -lpthread -lrt
+LDFLAGS  += -lilclient -L/mnt/f/winshare/raspberry/app/vc/lib
+LDFLAGS  += -lbrcmGLESv2 -lbrcmEGL -lopenmaxil -lbcm_host -lvcos -lvchiq_arm -L/mnt/f/winshare/raspberry/app/vc/lib
+
 
 export CFLAGS LDFLAGS
 
@@ -42,9 +48,11 @@ obj-y += main.o
 
 # 添加顶层目录下的子文件夹（注意目录名后面加一个/）
 obj-y += convert/
-#obj-y += render/
+obj-y += RTP/
 obj-y += video/
-#obj-y += transmission/
+obj-y += omxencode/
+#obj-y += circlebuf/
+obj-y += transmission/
 
 
 all: 
@@ -52,7 +60,7 @@ all:
 	$(CC) $(LDFLAGS) -o $(TARGET) built-in.o
 
 cp:
-	scp video_transmission root@192.168.31.207:/root/
+	sudo scp video_transmission pi@192.168.31.142:/home/pi/
 
 clean:
 	rm -f $(shell find -name "*.o")
